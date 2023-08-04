@@ -57,6 +57,8 @@ public class ScannerPullRequestPropertySensor implements Sensor {
 
         sensorContext.config().get(CommunityBranchPlugin.PR_SUMMARY_NOTE_EDIT)
                 .ifPresent(p -> sensorContext.addContextProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_EDIT, p));
+        sensorContext.config().get(CommunityBranchPlugin.PR_SUMMARY_NOTE_FIRST)
+                .ifPresent(p -> sensorContext.addContextProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_FIRST, p));
     }
 
 }

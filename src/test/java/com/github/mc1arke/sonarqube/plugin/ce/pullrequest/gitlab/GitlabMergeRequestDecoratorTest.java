@@ -645,6 +645,26 @@ public class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
+    public void shouldSubmitSummaryNoteBeforeIssueCommentWhenSummaryNoteFirstEnabled() throws IOException {
+        enableScannerProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_FIRST);
+        reportIssue();
+        noDiscussionsExist();
+
+        underTest.decorateQualityGateStatus(analysisDetails, almSettingDto, projectAlmSettingDto);
+
+        verify(gitlabClient, never()).resolveMergeRequestDiscussion(anyLong(), anyLong(), any());
+        verify(gitlabClient, never()).addMergeRequestDiscussionNote(anyLong(), anyLong(), any(), any());
+
+        ArgumentCaptor<MergeRequestNote> mergeRequestNoteArgumentCaptor = ArgumentCaptor.forClass(MergeRequestNote.class);
+        verify(gitlabClient, times(2)).addMergeRequestDiscussion(eq(PROJECT_ID), eq(MERGE_REQUEST_IID), mergeRequestNoteArgumentCaptor.capture());
+
+        assertThat(mergeRequestNoteArgumentCaptor.getAllValues().get(0)).isInstanceOf(MergeRequestNote.class);
+        assertThat(mergeRequestNoteArgumentCaptor.getAllValues().get(1))
+                .usingRecursiveComparison()
+                .isEqualTo(new CommitNote("Issue Summary", BASE_SHA, START_SHA, HEAD_SHA, "path-to-file", "path-to-file", 999));
+    }
+
+    @Test
     public void shouldNotCreateCommentsForIssuesWithNoLineNumbers() throws IOException {
         PostAnalysisIssueVisitor.LightIssue lightIssue = mock(PostAnalysisIssueVisitor.LightIssue.class);
         when(lightIssue.key()).thenReturn("issueKey1");

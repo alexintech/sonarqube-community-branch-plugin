@@ -95,6 +95,12 @@ public abstract class DiscussionAwarePullRequestDecorator<C, P, U, D, N> impleme
                 .filter(issue -> isIssueFromCommitInCurrentRequest(issue.getLeft(), commitIds, scmInfoRepository))
                 .collect(Collectors.toList());
 
+        AnalysisSummary analysisSummary = reportGenerator.createAnalysisSummary(analysis);
+        boolean isSummaryNoteFirst = isSummaryNoteFirstEnabled(analysis);
+        if (isSummaryNoteFirst) {
+            editExistingOrSubmitSummaryNote(client, pullRequest, currentProjectSonarqubeComments, analysis, analysisSummary);
+        }
+
         uncommentedIssues.forEach(issue -> submitCommitNoteForIssue(client,
                 pullRequest,
                 issue.getLeft(),
@@ -102,8 +108,9 @@ public abstract class DiscussionAwarePullRequestDecorator<C, P, U, D, N> impleme
                 analysis,
                 reportGenerator.createAnalysisIssueSummary(issue.getLeft(), analysis)));
 
-        AnalysisSummary analysisSummary = reportGenerator.createAnalysisSummary(analysis);
-        editExistingOrSubmitSummaryNote(client, pullRequest, currentProjectSonarqubeComments, analysis, analysisSummary);
+        if (!isSummaryNoteFirst) {
+            editExistingOrSubmitSummaryNote(client, pullRequest, currentProjectSonarqubeComments, analysis, analysisSummary);
+        }
         submitPipelineStatus(client, pullRequest, analysis, analysisSummary);
 
         DecorationResult.Builder builder = DecorationResult.builder();
