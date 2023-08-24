@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Michael Clarke
+ * Copyright (C) 2021-2023 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,11 +32,12 @@ import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.reflect.Field;
 import java.util.Optional;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.SonarRuntime;
+import org.sonar.core.documentation.DefaultDocumentationLinkGenerator;
+import org.sonar.core.documentation.DocumentationLinkGenerator;
 import org.sonar.core.platform.EditionProvider;
 import org.sonar.core.platform.PlatformEditionProvider;
 import org.sonar.db.DbClient;
@@ -76,7 +77,7 @@ class CommunityBranchAgentTest {
             SonarRuntime sonarRuntime = mock(SonarRuntime.class);
 
             SonarQubeFeature multipleAlmFeatureProvider = redefined.getConstructor(SonarRuntime.class).newInstance(sonarRuntime);
-            assertThat(multipleAlmFeatureProvider.isEnabled()).isTrue();
+            assertThat(multipleAlmFeatureProvider.isAvailable()).isTrue();
         }
     }
 
@@ -85,6 +86,7 @@ class CommunityBranchAgentTest {
     void shouldRedefineSetActionClassForWebLaunch() throws ReflectiveOperationException, IOException, UnmodifiableClassException, IllegalClassFormatException {
         CustomClassloader classLoader = new CustomClassloader();
         Instrumentation instrumentation = mock(Instrumentation.class);
+        DocumentationLinkGenerator documentationLinkGenerator = mock(DefaultDocumentationLinkGenerator.class);
 
         CommunityBranchAgent.premain("web", instrumentation);
 
@@ -104,8 +106,8 @@ class CommunityBranchAgentTest {
             PlatformEditionProvider platformEditionProvider = mock(PlatformEditionProvider.class);
             NewCodePeriodDao newCodePeriodDao = mock(NewCodePeriodDao.class);
 
-            Object setAction = setActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class)
-                    .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao);
+      Object setAction = setActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class, DocumentationLinkGenerator.class)
+              .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao, documentationLinkGenerator);
 
             Field editionProviderField = setActionClass.getDeclaredField("editionProvider");
             editionProviderField.setAccessible(true);
@@ -119,6 +121,7 @@ class CommunityBranchAgentTest {
 
         Instrumentation instrumentation = mock(Instrumentation.class);
         CommunityBranchAgent.premain("web", instrumentation);
+        DocumentationLinkGenerator documentationLinkGenerator = mock(DefaultDocumentationLinkGenerator.class);
 
         ArgumentCaptor<ClassFileTransformer> classFileTransformerArgumentCaptor = ArgumentCaptor.forClass(ClassFileTransformer.class);
         verify(instrumentation).retransformClasses(UnsetAction.class);
@@ -135,8 +138,8 @@ class CommunityBranchAgentTest {
             PlatformEditionProvider platformEditionProvider = mock(PlatformEditionProvider.class);
             NewCodePeriodDao newCodePeriodDao = mock(NewCodePeriodDao.class);
 
-            Object setAction = unsetActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class)
-                    .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao);
+            Object setAction = unsetActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class, DocumentationLinkGenerator.class)
+                    .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao, documentationLinkGenerator);
 
             Field editionProviderField = unsetActionClass.getDeclaredField("editionProvider");
             editionProviderField.setAccessible(true);
@@ -207,7 +210,7 @@ class CommunityBranchAgentTest {
 
             Class<MultipleAlmFeature> redefined = (Class<MultipleAlmFeature>) classLoader.loadClass(MultipleAlmFeature.class.getName(), result);
             SonarQubeFeature multipleAlmFeatureProvider = redefined.getConstructor(SonarRuntime.class).newInstance(sonarRuntime);
-            assertThat(multipleAlmFeatureProvider.isEnabled()).isTrue();
+            assertThat(multipleAlmFeatureProvider.isAvailable()).isTrue();
         }
     }
 
