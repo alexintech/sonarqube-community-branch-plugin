@@ -32,6 +32,7 @@ import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 import java.lang.reflect.Field;
 import java.util.Optional;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -106,8 +107,8 @@ class CommunityBranchAgentTest {
             PlatformEditionProvider platformEditionProvider = mock(PlatformEditionProvider.class);
             NewCodePeriodDao newCodePeriodDao = mock(NewCodePeriodDao.class);
 
-      Object setAction = setActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class, DocumentationLinkGenerator.class)
-              .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao, documentationLinkGenerator);
+            Object setAction = setActionClass.getConstructor(DbClient.class, UserSession.class, ComponentFinder.class, PlatformEditionProvider.class, NewCodePeriodDao.class, DocumentationLinkGenerator.class)
+                    .newInstance(dbClient, userSession, componentFinder, platformEditionProvider, newCodePeriodDao, documentationLinkGenerator);
 
             Field editionProviderField = setActionClass.getDeclaredField("editionProvider");
             editionProviderField.setAccessible(true);
