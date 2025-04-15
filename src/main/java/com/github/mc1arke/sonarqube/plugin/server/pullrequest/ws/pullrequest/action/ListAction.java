@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2022 SonarSource SA (mailto:info AT sonarsource DOT com), Michael Clarke
+ * Copyright (C) 2009-2024 SonarSource SA (mailto:info AT sonarsource DOT com), Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -34,7 +35,6 @@ import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.utils.DateUtils;
 import org.sonar.api.web.UserRole;
-import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.BranchDao;
@@ -89,13 +89,13 @@ public class ListAction extends ProjectWsAction {
                 .map(BranchDto::getMergeBranchUuid)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()))
-            .stream().collect(MoreCollectors.uniqueIndex(BranchDto::getUuid));
+            .stream().collect(Collectors.toMap(BranchDto::getUuid, Function.identity()));
 
         Map<String, LiveMeasureDto> qualityGateMeasuresByComponentUuids = getDbClient().liveMeasureDao()
             .selectByComponentUuidsAndMetricKeys(dbSession, pullRequestUuids, List.of(CoreMetrics.ALERT_STATUS_KEY)).stream()
-            .collect(MoreCollectors.uniqueIndex(LiveMeasureDto::getComponentUuid));
+            .collect(Collectors.toMap(LiveMeasureDto::getComponentUuid, Function.identity()));
         Map<String, String> analysisDateByBranchUuid = getDbClient().snapshotDao().selectLastAnalysesByRootComponentUuids(dbSession, pullRequestUuids).stream()
-            .collect(MoreCollectors.uniqueIndex(SnapshotDto::getComponentUuid, s -> DateUtils.formatDateTime(s.getCreatedAt())));
+            .collect(Collectors.toMap(SnapshotDto::getUuid, s -> DateUtils.formatDateTime(s.getCreatedAt())));
 
         ProjectPullRequests.ListWsResponse.Builder protobufResponse = ProjectPullRequests.ListWsResponse.newBuilder();
         pullRequests
@@ -105,8 +105,8 @@ public class ListAction extends ProjectWsAction {
     }
 
     private static void checkPermission(ProjectDto project, UserSession userSession) {
-        if (userSession.hasProjectPermission(UserRole.USER, project) ||
-            userSession.hasProjectPermission(UserRole.SCAN, project) ||
+        if (userSession.hasEntityPermission(UserRole.USER, project) ||
+            userSession.hasEntityPermission(UserRole.SCAN, project) ||
             userSession.hasPermission(GlobalPermission.SCAN)) {
             return;
         }
@@ -120,10 +120,12 @@ public class ListAction extends ProjectWsAction {
         ProjectPullRequests.PullRequest.Builder builder = ProjectPullRequests.PullRequest.newBuilder();
         builder.setKey(branch.getKey());
 
-        DbProjectBranches.PullRequestData pullRequestData = Objects.requireNonNull(branch.getPullRequestData(), "Pull request data should be available for branch type PULL_REQUEST");
-        builder.setBranch(pullRequestData.getBranch());
-        Optional.ofNullable(Strings.emptyToNull(pullRequestData.getUrl())).ifPresent(builder::setUrl);
-        Optional.ofNullable(Strings.emptyToNull(pullRequestData.getTitle())).ifPresent(builder::setTitle);
+        Optional<DbProjectBranches.PullRequestData> optionalPullRequestData = Optional.ofNullable(branch.getPullRequestData());
+        optionalPullRequestData.ifPresent(pullRequestData -> {
+            builder.setBranch(pullRequestData.getBranch());
+            Optional.ofNullable(Strings.emptyToNull(pullRequestData.getUrl())).ifPresent(builder::setUrl);
+            Optional.ofNullable(Strings.emptyToNull(pullRequestData.getTitle())).ifPresent(builder::setTitle);
+        });
 
         if (mergeBranch.isPresent()) {
             String mergeBranchKey = mergeBranch.get().getKey();
@@ -132,8 +134,10 @@ public class ListAction extends ProjectWsAction {
             builder.setIsOrphan(true);
         }
 
-        if (StringUtils.isNotEmpty(pullRequestData.getTarget())) {
-            builder.setTarget(pullRequestData.getTarget());
+        Optional<String> pullRequestTarget = optionalPullRequestData.map(DbProjectBranches.PullRequestData::getTarget)
+                .filter(StringUtils::isNotEmpty);
+        if (pullRequestTarget.isPresent()) {
+            builder.setTarget(pullRequestTarget.get());
         } else {
             mergeBranch.ifPresent(branchDto -> builder.setTarget(branchDto.getKey()));
         }
