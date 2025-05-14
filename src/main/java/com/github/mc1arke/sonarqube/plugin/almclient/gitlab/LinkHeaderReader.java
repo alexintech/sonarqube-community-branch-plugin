@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Clarke
+ * Copyright (C) 2020-2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,21 +16,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-package com.github.mc1arke.sonarqube.plugin.almclient.github.v3.model;
+package com.github.mc1arke.sonarqube.plugin.almclient.gitlab;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Optional;
 
-public class Owner {
+public interface LinkHeaderReader {
 
-    private final String login;
+    Optional<String> findNextLink(String linkHeader);
 
-    @JsonCreator
-    public Owner(@JsonProperty("login") String login) {
-        this.login = login;
-    }
-
-    public String getLogin() {
-        return login;
-    }
 }

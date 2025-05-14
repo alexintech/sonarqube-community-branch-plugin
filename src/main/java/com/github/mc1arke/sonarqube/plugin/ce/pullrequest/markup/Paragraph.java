@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Michael Clarke
+ * Copyright (C) 2019-2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,6 @@ public final class Paragraph extends Node {
 
     @Override
     boolean isValidChild(Node child) {
-        return child instanceof Image || child instanceof Text || child instanceof Link;
+        return child instanceof Image || child instanceof Text || child instanceof Link || child instanceof Bold;
     }
 }

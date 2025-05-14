@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Julien Roy
+ * Copyright (C) 2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,8 +16,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-package com.github.mc1arke.sonarqube.plugin.almclient.github.v4.model;
+package com.github.mc1arke.sonarqube.plugin.ce.pullrequest.markup;
 
-public enum CommentClassifiers {
-    OUTDATED
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+
+class BoldTest {
+
+    @Test
+    void shouldAcceptTextAsChild() {
+        assertThat(new Bold().isValidChild(new Text("hello"))).isTrue();
+    }
+
+    @Test
+    void shouldRejectNonTextAsChild() {
+        assertThat(new Bold().isValidChild(new Bold())).isFalse();
+    }
+
 }

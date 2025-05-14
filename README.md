@@ -23,7 +23,7 @@ Use the following table to find the correct plugin version for each SonarQube ve
 
 | SonarQube Version | Plugin Version |
 |-------------------|----------------|
-| 10.6              | 1.21.0         |
+| 10.6              | 1.22.0         |
 | 10.5              | 1.20.0         |
 | 10.4              | 1.19.0         |
 | 9.9 (LTS)         | 1.14.0         |
@@ -71,7 +71,7 @@ provided Dockerfile.
 A `docker-compose.yml` file is provided.
 It uses the env variables available in `.env`.
 
-To use it, clone the repository and execute `docker-compose up`. Note that you need to have docker-compose installed in your system and added to your PATH
+To use it, clone the repository, create a `.env` with `SONARQUBE_VERSION` defined, and execute `docker compose up`. Note that you need to have `docker compose` installed in your system and added to your PATH.
 
 ## Kubernetes with official Helm Chart
 
@@ -98,8 +98,9 @@ jvmCeOpts: "-javaagent:/opt/sonarqube/lib/common/sonarqube-community-branch-plug
 plugins:
   install:
     - https://github.com/mc1arke/sonarqube-community-branch-plugin/releases/download/${version}/sonarqube-community-branch-plugin-${version}.jar
-jvmOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-${version}.jar=web"
-jvmCeOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-${version}.jar=ce"
+sonarProperties:
+  sonar.web.javaAdditionalOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-${version}.jar=web"
+  sonar.ce.javaAdditionalOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-${version}.jar=ce"
 ```
 
 ### Issues with file path with persistency

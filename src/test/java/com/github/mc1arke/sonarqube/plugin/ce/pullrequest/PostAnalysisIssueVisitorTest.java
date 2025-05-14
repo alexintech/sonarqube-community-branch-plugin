@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Michael Clarke
+ * Copyright (C) 2019-2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,55 +18,54 @@
  */
 package com.github.mc1arke.sonarqube.plugin.ce.pullrequest;
 
-import org.junit.Test;
-import org.sonar.api.rule.RuleKey;
-import org.sonar.api.rules.RuleType;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.component.ReportAttributes;
-import org.sonar.core.issue.DefaultIssue;
-import org.sonar.db.protobuf.DbIssues;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class PostAnalysisIssueVisitorTest {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-    private static final long EXAMPLE_ISSUE_EFFORT_IN_MINUTES = 15L;
+import org.junit.jupiter.api.Test;
+import org.sonar.api.issue.IssueStatus;
+import org.sonar.api.issue.impact.Severity;
+import org.sonar.api.issue.impact.SoftwareQuality;
+import org.sonar.api.rule.RuleKey;
+import org.sonar.ce.task.projectanalysis.component.Component;
+import org.sonar.ce.task.projectanalysis.component.ReportAttributes;
+import org.sonar.core.issue.DefaultIssue;
+import org.sonar.db.protobuf.DbIssues;
+
+class PostAnalysisIssueVisitorTest {
+
     private static final String EXAMPLE_ISSUE_KEY = "key";
     private static final int EXAMPLE_ISSUE_LINE = 1000;
     private static final String EXAMPLE_ISSUE_MESSAGE = "message";
     private static final String EXAMPLE_ISSUE_RESOLUTION = "resolution";
-    private static final String EXAMPLE_ISSUE_SEVERITY = "severity";
-    private static final String EXAMPLE_ISSUE_STATUS = "status";
-    private static final RuleType EXAMPLE_ISSUE_TYPE = RuleType.BUG;
+    private static final Map<SoftwareQuality, Severity> EXAMPLE_IMPACTS = Map.of(SoftwareQuality.RELIABILITY, Severity.HIGH);
+    private static final IssueStatus EXAMPLE_ISSUE_STATUS = IssueStatus.OPEN;
     private static final RuleKey EXAMPLE_ISSUE_RULEKEY = RuleKey.of("repo", "rule");
     private static final DbIssues.Locations EXAMPLE_ISSUE_LOCATIONS = DbIssues.Locations.getDefaultInstance();
 
     @Test
-    public void checkAllIssuesCollected() {
+    void checkAllIssuesCollected() {
         PostAnalysisIssueVisitor testCase = new PostAnalysisIssueVisitor();
 
         List<PostAnalysisIssueVisitor.ComponentIssue> expected = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-            DefaultIssue issue = mock(DefaultIssue.class);
-            Component component = mock(Component.class);
+            DefaultIssue issue = mock();
+            Component component = mock();
             expected.add(new PostAnalysisIssueVisitor.ComponentIssue(component, new PostAnalysisIssueVisitor.LightIssue(issue)));
 
             testCase.onIssue(component, issue);
         }
 
 
-        assertThat(testCase.getIssues().size()).isEqualTo(expected.size());
+        assertThat(testCase.getIssues()).hasSameSizeAs(expected);
         for (int i = 0; i < expected.size(); i++) {
             assertThat(testCase.getIssues().get(i).getIssue()).isEqualTo(expected.get(i).getIssue());
             assertThat(testCase.getIssues().get(i).getComponent()).isEqualTo(expected.get(i).getComponent());
@@ -74,25 +73,23 @@ public class PostAnalysisIssueVisitorTest {
     }
 
     private DefaultIssue exampleDefaultIssue() {
-        DefaultIssue defaultIssue = mock(DefaultIssue.class);
-        doReturn(EXAMPLE_ISSUE_EFFORT_IN_MINUTES).when(defaultIssue).effortInMinutes();
-        doReturn(EXAMPLE_ISSUE_KEY).when(defaultIssue).key();
-        doReturn(EXAMPLE_ISSUE_LINE).when(defaultIssue).getLine();
-        doReturn(EXAMPLE_ISSUE_MESSAGE).when(defaultIssue).getMessage();
-        doReturn(EXAMPLE_ISSUE_RESOLUTION).when(defaultIssue).resolution();
-        doReturn(EXAMPLE_ISSUE_SEVERITY).when(defaultIssue).severity();
-        doReturn(EXAMPLE_ISSUE_STATUS).when(defaultIssue).status();
-        doReturn(EXAMPLE_ISSUE_TYPE).when(defaultIssue).type();
-        doReturn(EXAMPLE_ISSUE_RULEKEY).when(defaultIssue).getRuleKey();
-        doReturn(EXAMPLE_ISSUE_LOCATIONS).when(defaultIssue).getLocations();
+        DefaultIssue defaultIssue = mock();
+        when(defaultIssue.key()).thenReturn(EXAMPLE_ISSUE_KEY);
+        when(defaultIssue.getLine()).thenReturn(EXAMPLE_ISSUE_LINE);
+        when(defaultIssue.getMessage()).thenReturn(EXAMPLE_ISSUE_MESSAGE);
+        when(defaultIssue.resolution()).thenReturn(EXAMPLE_ISSUE_RESOLUTION);
+        when(defaultIssue.issueStatus()).thenReturn(EXAMPLE_ISSUE_STATUS);
+        when(defaultIssue.getRuleKey()).thenReturn(EXAMPLE_ISSUE_RULEKEY);
+        when(defaultIssue.getLocations()).thenReturn(EXAMPLE_ISSUE_LOCATIONS);
+        when(defaultIssue.impacts()).thenReturn(EXAMPLE_IMPACTS);
         return defaultIssue;
     }
 
     @Test
-    public void testLightIssueMapping() {
+    void testLightIssueMapping() {
         // mock a DefaultIssue
         DefaultIssue defaultIssue = exampleDefaultIssue();
-        Component component = mock(Component.class);
+        Component component = mock();
 
         // map the DefaultIssue into a LightIssue (using PostAnalysisIssueVisitor to workaround private constructor)
         PostAnalysisIssueVisitor visitor = new PostAnalysisIssueVisitor();
@@ -101,37 +98,32 @@ public class PostAnalysisIssueVisitorTest {
 
         // check values equality, twice (see below)
         for (int i = 0; i < 2; i++) {
-            assertThat(lightIssue.effortInMinutes()).isEqualTo(EXAMPLE_ISSUE_EFFORT_IN_MINUTES);
             assertThat(lightIssue.key()).isEqualTo(EXAMPLE_ISSUE_KEY);
             assertThat(lightIssue.getLine()).isEqualTo(EXAMPLE_ISSUE_LINE);
             assertThat(lightIssue.getMessage()).isEqualTo(EXAMPLE_ISSUE_MESSAGE);
             assertThat(lightIssue.resolution()).isEqualTo(EXAMPLE_ISSUE_RESOLUTION);
-            assertThat(lightIssue.severity()).isEqualTo(EXAMPLE_ISSUE_SEVERITY);
-            assertThat(lightIssue.status()).isEqualTo(EXAMPLE_ISSUE_STATUS);
-            assertThat(lightIssue.getStatus()).isEqualTo(EXAMPLE_ISSUE_STATUS); // alias getter
-            assertThat(lightIssue.type()).isEqualTo(EXAMPLE_ISSUE_TYPE);
+            assertThat(lightIssue.impacts()).isEqualTo(EXAMPLE_IMPACTS);
+            assertThat(lightIssue.issueStatus()).isEqualTo(EXAMPLE_ISSUE_STATUS);
             assertThat(lightIssue.getRuleKey()).isEqualTo(EXAMPLE_ISSUE_RULEKEY);
             assertThat(lightIssue.getLocations()).isEqualTo(EXAMPLE_ISSUE_LOCATIONS);
         }
 
         // check DefaultIssue getters have been called _exactly once_
-        verify(defaultIssue).effortInMinutes();
         verify(defaultIssue).key();
         verify(defaultIssue).getLine();
         verify(defaultIssue).getMessage();
         verify(defaultIssue).resolution();
-        verify(defaultIssue).severity();
-        verify(defaultIssue).status();
-        verify(defaultIssue).type();
+        verify(defaultIssue).impacts();
+        verify(defaultIssue).issueStatus();
         verify(defaultIssue).getRuleKey();
         verify(defaultIssue).getLocations();
         verifyNoMoreInteractions(defaultIssue);
     }
 
     @Test
-    public void testEqualLightIssues() {
+    void shouldReturnEqualsForSameIssueContents() {
         DefaultIssue defaultIssue = exampleDefaultIssue();
-        Component component = mock(Component.class);
+        Component component = mock();
 
         // map the DefaultIssue into two equal LightIssues
         PostAnalysisIssueVisitor visitor = new PostAnalysisIssueVisitor();
@@ -141,18 +133,18 @@ public class PostAnalysisIssueVisitorTest {
         PostAnalysisIssueVisitor.LightIssue lightIssue2 = visitor.getIssues().get(1).getIssue();
 
         // assert equality
-        assertEquals(lightIssue1, lightIssue2);
-        assertEquals(lightIssue1.hashCode(), lightIssue2.hashCode());
+        assertThat(lightIssue1).isEqualTo(lightIssue2)
+            .hasSameHashCodeAs(lightIssue2)
 
         // also assert equality on identity
-        assertEquals(lightIssue1, lightIssue1);
-        assertEquals(lightIssue1.hashCode(), lightIssue1.hashCode());
+            .isEqualTo(lightIssue1)
+            .hasSameHashCodeAs(lightIssue1);
     }
 
     @Test
-    public void testDifferentLightIssues() {
+    void shouldNotReturnEqualsForDifferentIssueContents() {
         DefaultIssue defaultIssue = exampleDefaultIssue();
-        Component component = mock(Component.class);
+        Component component = mock();
 
         // map the DefaultIssue into a first LightIssue
         PostAnalysisIssueVisitor visitor = new PostAnalysisIssueVisitor();
@@ -165,52 +157,52 @@ public class PostAnalysisIssueVisitorTest {
         PostAnalysisIssueVisitor.LightIssue lightIssue2 = visitor.getIssues().get(1).getIssue();
 
         // assert difference
-        assertNotEquals(lightIssue1, lightIssue2);
-        assertNotEquals(lightIssue1.hashCode(), lightIssue2.hashCode());
+        assertThat(lightIssue1).isNotEqualTo(lightIssue2)
+            .doesNotHaveSameHashCodeAs(lightIssue2)
 
         // also assert difference with unrelated objects, and null
-        assertNotEquals(lightIssue1, new Object());
-        assertNotEquals(lightIssue1, null);
+            .isNotEqualTo(new Object())
+            .isNotEqualTo(null);
         
     }
 
     @Test
-    public void shouldReturnScmInfoForFileComponent() {
-        Component component = mock(Component.class);
+    void shouldReturnScmInfoForFileComponent() {
+        Component component = mock();
         when(component.getType()).thenReturn(Component.Type.FILE);
-        ReportAttributes reportAttributes = mock(ReportAttributes.class);
+        ReportAttributes reportAttributes = mock();
         when(reportAttributes.getScmPath()).thenReturn(Optional.of("path"));
         when(component.getReportAttributes()).thenReturn(reportAttributes);
 
-        PostAnalysisIssueVisitor.LightIssue issue = mock(PostAnalysisIssueVisitor.LightIssue.class);
+        PostAnalysisIssueVisitor.LightIssue issue = mock();
         PostAnalysisIssueVisitor.ComponentIssue underTest = new PostAnalysisIssueVisitor.ComponentIssue(component, issue);
 
         assertThat(underTest.getScmPath()).contains("path");
     }
 
     @Test
-    public void shouldReturnNoScmInfoForNonFileComponent() {
-        Component component = mock(Component.class);
+    void shouldReturnNoScmInfoForNonFileComponent() {
+        Component component = mock();
         when(component.getType()).thenReturn(Component.Type.PROJECT);
-        ReportAttributes reportAttributes = mock(ReportAttributes.class);
+        ReportAttributes reportAttributes = mock();
         when(reportAttributes.getScmPath()).thenReturn(Optional.of("path"));
         when(component.getReportAttributes()).thenReturn(reportAttributes);
 
-        PostAnalysisIssueVisitor.LightIssue issue = mock(PostAnalysisIssueVisitor.LightIssue.class);
+        PostAnalysisIssueVisitor.LightIssue issue = mock();
         PostAnalysisIssueVisitor.ComponentIssue underTest = new PostAnalysisIssueVisitor.ComponentIssue(component, issue);
 
         assertThat(underTest.getScmPath()).isEmpty();
     }
 
     @Test
-    public void shouldReturnNoScmInfoForFileComponentWithNoInfo() {
-        Component component = mock(Component.class);
+    void shouldReturnNoScmInfoForFileComponentWithNoInfo() {
+        Component component = mock();
         when(component.getType()).thenReturn(Component.Type.FILE);
-        ReportAttributes reportAttributes = mock(ReportAttributes.class);
+        ReportAttributes reportAttributes = mock();
         when(reportAttributes.getScmPath()).thenReturn(Optional.empty());
         when(component.getReportAttributes()).thenReturn(reportAttributes);
 
-        PostAnalysisIssueVisitor.LightIssue issue = mock(PostAnalysisIssueVisitor.LightIssue.class);
+        PostAnalysisIssueVisitor.LightIssue issue = mock();
         PostAnalysisIssueVisitor.ComponentIssue underTest = new PostAnalysisIssueVisitor.ComponentIssue(component, issue);
 
         assertThat(underTest.getScmPath()).isEmpty();

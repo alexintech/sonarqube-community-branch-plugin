@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Michael Clarke
+ * Copyright (C) 2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,26 +16,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-package com.github.mc1arke.sonarqube.plugin.almclient.github.v4;
+package com.github.mc1arke.sonarqube.plugin.ce.pullrequest.markup;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.mc1arke.sonarqube.plugin.almclient.github.v4.model.CheckRun;
-import io.aexp.nodes.graphql.annotations.GraphQLArgument;
-import io.aexp.nodes.graphql.annotations.GraphQLProperty;
+public class Bold extends Node {
 
-@GraphQLProperty(name = "updateCheckRun", arguments = {@GraphQLArgument(name = "input")})
-public class UpdateCheckRun {
-
-    private final CheckRun checkRun;
-
-    @JsonCreator
-    public UpdateCheckRun(@JsonProperty("checkRun") CheckRun checkRun) {
-        this.checkRun = checkRun;
+    public Bold(Node... children) {
+        super(children);
     }
 
-    public CheckRun getCheckRun() {
-        return checkRun;
+    @Override
+    boolean isValidChild(Node node) {
+        return node instanceof Text;
     }
 
 }

@@ -1,22 +1,35 @@
+/*
+ * Copyright (C) 2021-2024 Michael Clarke
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
 package com.github.mc1arke.sonarqube.plugin.almclient.gitlab;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.mc1arke.sonarqube.plugin.almclient.LinkHeaderReader;
 import com.github.mc1arke.sonarqube.plugin.almclient.gitlab.model.MergeRequestNote;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.StatusLine;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,21 +40,21 @@ import static org.mockito.Mockito.when;
 
 class GitlabRestClientTest {
 
-    private final CloseableHttpClient closeableHttpClient = mock(CloseableHttpClient.class);
-    private final LinkHeaderReader linkHeaderReader = mock(LinkHeaderReader.class);
-    private final ObjectMapper objectMapper = mock(ObjectMapper.class);
+    private final CloseableHttpClient closeableHttpClient = mock();
+    private final LinkHeaderReader linkHeaderReader = mock();
+    private final ObjectMapper objectMapper = mock();
 
     @Test
     void checkErrorThrownOnNonSuccessResponseStatus() throws IOException {
         GitlabRestClient underTest = new GitlabRestClient("http://url.test/api", "token", linkHeaderReader, objectMapper, () -> closeableHttpClient);
 
-        CloseableHttpResponse closeableHttpResponse = mock(CloseableHttpResponse.class);
-        StatusLine statusLine = mock(StatusLine.class);
+        CloseableHttpResponse closeableHttpResponse = mock();
+        StatusLine statusLine = mock();
         when(statusLine.getStatusCode()).thenReturn(500);
         when(closeableHttpResponse.getStatusLine()).thenReturn(statusLine);
         when(closeableHttpClient.execute(any())).thenReturn(closeableHttpResponse);
 
-        MergeRequestNote mergeRequestNote = mock(MergeRequestNote.class);
+        MergeRequestNote mergeRequestNote = mock();
         when(mergeRequestNote.getContent()).thenReturn("note");
 
         assertThatThrownBy(() -> underTest.addMergeRequestDiscussion(101, 99, mergeRequestNote))
@@ -49,7 +62,7 @@ class GitlabRestClientTest {
                 .hasMessage("An unexpected response code was returned from the Gitlab API - Expected: 201, Got: 500")
                 .hasNoCause();
 
-        ArgumentCaptor<HttpUriRequest> requestArgumentCaptor = ArgumentCaptor.forClass(HttpUriRequest.class);
+        ArgumentCaptor<HttpUriRequest> requestArgumentCaptor = ArgumentCaptor.captor();
         verify(closeableHttpClient).execute(requestArgumentCaptor.capture());
 
         HttpEntityEnclosingRequest request = (HttpEntityEnclosingRequest) requestArgumentCaptor.getValue();
@@ -61,11 +74,11 @@ class GitlabRestClientTest {
 
     @Test
     void checkCorrectEncodingUsedOnMergeRequestDiscussion() throws IOException {
-        CloseableHttpResponse closeableHttpResponse = mock(CloseableHttpResponse.class);
-        StatusLine statusLine = mock(StatusLine.class);
+        CloseableHttpResponse closeableHttpResponse = mock();
+        StatusLine statusLine = mock();
         when(statusLine.getStatusCode()).thenReturn(201);
         when(closeableHttpResponse.getStatusLine()).thenReturn(statusLine);
-        HttpEntity httpEntity = mock(HttpEntity.class);
+        HttpEntity httpEntity = mock();
         when(closeableHttpResponse.getEntity()).thenReturn(httpEntity);
         when(closeableHttpClient.execute(any())).thenReturn(closeableHttpResponse);
 
@@ -74,7 +87,7 @@ class GitlabRestClientTest {
         GitlabRestClient underTest = new GitlabRestClient("http://api.url", "token", linkHeaderReader, objectMapper, () -> closeableHttpClient);
         underTest.addMergeRequestDiscussion(123, 321, mergeRequestNote);
 
-        ArgumentCaptor<HttpUriRequest> requestArgumentCaptor = ArgumentCaptor.forClass(HttpUriRequest.class);
+        ArgumentCaptor<HttpUriRequest> requestArgumentCaptor = ArgumentCaptor.captor();
         verify(closeableHttpClient).execute(requestArgumentCaptor.capture());
 
         HttpEntityEnclosingRequest request = (HttpEntityEnclosingRequest) requestArgumentCaptor.getValue();

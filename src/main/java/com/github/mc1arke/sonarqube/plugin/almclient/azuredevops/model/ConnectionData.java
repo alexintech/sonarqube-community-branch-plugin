@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Michael Clarke
+ * Copyright (C) 2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,22 +16,33 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-package com.github.mc1arke.sonarqube.plugin.almclient.github.v4.model;
+package com.github.mc1arke.sonarqube.plugin.almclient.azuredevops.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CheckRun {
+public class ConnectionData {
 
-    private final String id;
+    private final Identity authenticatedUser;
 
-    @JsonCreator
-    public CheckRun(@JsonProperty("id") String id) {
-        this.id = id;
+    public ConnectionData(@JsonProperty("authenticatedUser") Identity authenticatedUser) {
+        this.authenticatedUser = authenticatedUser;
     }
 
-    public String getId() {
-        return id;
+    public Identity getAuthenticatedUser() {
+        return authenticatedUser;
+    }
+
+    public static class Identity {
+
+        private final String id;
+
+        public Identity(@JsonProperty("id") String id) {
+            this.id = id;
+        }
+
+        public String getId() {
+            return id;
+        }
     }
 
 }

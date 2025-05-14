@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Michael Clarke
+ * Copyright (C) 2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,45 +16,48 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-package com.github.mc1arke.sonarqube.plugin.almclient.github.v3.model;
+package com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Repository {
+public class BuildStatus {
 
-    private final String nodeId;
-    private final String fullName;
-    private final String htmlUrl;
+    private final State state;
+    private final String key;
     private final String name;
-    private final Owner owner;
+    private final String url;
 
-    @JsonCreator
-    public Repository(@JsonProperty("node_id") String nodeId, @JsonProperty("full_name") String fullName, @JsonProperty("html_url") String htmlUrl, @JsonProperty("name") String name, @JsonProperty("owner") Owner owner) {
-        this.nodeId = nodeId;
-        this.fullName = fullName;
-        this.htmlUrl = htmlUrl;
+    public BuildStatus(@JsonProperty("state") State state,
+                       @JsonProperty("key") String key,
+                       @JsonProperty("name") String name,
+                       @JsonProperty("url") String url) {
+        this.state = state;
+        this.key = key;
         this.name = name;
-        this.owner = owner;
+        this.url = url;
     }
 
-    public String getFullName() {
-        return fullName;
+    public State getState() {
+        return state;
     }
 
-    public String getNodeId() {
-        return nodeId;
-    }
-
-    public String getHtmlUrl() {
-        return htmlUrl;
+    public String getKey() {
+        return key;
     }
 
     public String getName() {
         return name;
     }
 
-    public Owner getOwner() {
-        return owner;
+    public String getUrl() {
+        return url;
+    }
+
+    public enum State {
+        INPROGRESS,
+        SUCCESSFUL,
+        FAILED,
+        CANCELLED,
+        UNKNOWN
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Michael Clarke
+ * Copyright (C) 2021-2024 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@ package com.github.mc1arke.sonarqube.plugin.almclient.bitbucket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model.AnnotationUploadLimit;
+import com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model.BuildStatus;
 import com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model.CodeInsightsAnnotation;
 import com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model.CodeInsightsReport;
 import com.github.mc1arke.sonarqube.plugin.almclient.bitbucket.model.DataValue;
@@ -37,56 +38,43 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.Buffer;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class BitbucketServerClientUnitTest {
+class BitbucketServerClientUnitTest {
 
-    private BitbucketServerClient underTest;
-
-    @Spy
-    private ObjectMapper mapper;
-
-    @Mock
-    private OkHttpClient client;
-
-    @Before
-    public void before() {
-        BitbucketServerConfiguration
-                config = new BitbucketServerConfiguration("project", "repository", "https://my-server.org");
-        underTest = new BitbucketServerClient(config, mapper, client);
-    }
+    private final ObjectMapper mapper = spy();
+    private final OkHttpClient client = mock();
+    private final BitbucketServerClient underTest = new BitbucketServerClient(new BitbucketServerConfiguration("project", "repository", "https://my-server.org"), mapper, client);
 
     @Test
-    public void testSupportsCodeInsightsIsFalse() throws IOException {
+    void testSupportsCodeInsightsIsFalse() throws IOException {
         // given
         ServerProperties serverProperties = new ServerProperties("5.0");
 
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ObjectReader reader = mock(ObjectReader.class);
-        ResponseBody responseBody = mock(ResponseBody.class);
+        Call call = mock();
+        Response response = mock();
+        ObjectReader reader = mock();
+        ResponseBody responseBody = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -106,14 +94,14 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testSupportsCodeInsightsIsTrueWhenVersionEqual() throws IOException {
+    void testSupportsCodeInsightsIsTrueWhenVersionEqual() throws IOException {
         // given
         ServerProperties serverProperties = new ServerProperties("5.15");
 
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ObjectReader reader = mock(ObjectReader.class);
-        ResponseBody responseBody = mock(ResponseBody.class);
+        Call call = mock();
+        Response response = mock();
+        ObjectReader reader = mock();
+        ResponseBody responseBody = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -133,14 +121,14 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testSupportsCodeInsightsIsTrueIfVersionIsHigher() throws IOException {
+    void testSupportsCodeInsightsIsTrueIfVersionIsHigher() throws IOException {
         // given
         ServerProperties serverProperties = new ServerProperties("6.0");
 
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ObjectReader reader = mock(ObjectReader.class);
-        ResponseBody responseBody = mock(ResponseBody.class);
+        Call call = mock();
+        Response response = mock();
+        ObjectReader reader = mock();
+        ResponseBody responseBody = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -160,9 +148,9 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testSupportsCodeInsightsIsFalseWhenException() throws IOException {
+    void testSupportsCodeInsightsIsFalseWhenException() throws IOException {
         // given
-        Call call = mock(Call.class);
+        Call call = mock();
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenThrow(new IOException());
 
@@ -174,15 +162,15 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testGetServerProperties() throws IOException {
+    void testGetServerProperties() throws IOException {
         // given
         ServerProperties serverProperties = new ServerProperties("5.0");
 
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ObjectReader reader = mock(ObjectReader.class);
-        ResponseBody responseBody = mock(ResponseBody.class);
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        Call call = mock();
+        Response response = mock();
+        ObjectReader reader = mock();
+        ResponseBody responseBody = mock();
+        ArgumentCaptor<Request> captor = ArgumentCaptor.captor();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -206,11 +194,11 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testGetServerPropertiesError() throws IOException {
+    void testGetServerPropertiesError() throws IOException {
         // given
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ObjectReader reader = mock(ObjectReader.class);
+        Call call = mock();
+        Response response = mock();
+        ObjectReader reader = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -221,17 +209,17 @@ public class BitbucketServerClientUnitTest {
         when(reader.forType(ServerProperties.class)).thenReturn(reader);
 
         // when, then
-        assertThatThrownBy(() -> underTest.getServerProperties())
+        assertThatThrownBy(underTest::getServerProperties)
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    public void testUploadReport() throws IOException {
+    void testUploadReport() throws IOException {
         // given
-        CodeInsightsReport report = mock(CodeInsightsReport.class);
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        CodeInsightsReport report = mock();
+        Call call = mock();
+        Response response = mock();
+        ArgumentCaptor<Request> captor = ArgumentCaptor.captor();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -250,11 +238,11 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testUploadReportFails() throws IOException {
+    void testUploadReportFails() throws IOException {
         // given
-        CodeInsightsReport report = mock(CodeInsightsReport.class);
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
+        CodeInsightsReport report = mock();
+        Call call = mock();
+        Response response = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -269,16 +257,16 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testUploadReportFailsWithMessage() throws IOException {
+    void testUploadReportFailsWithMessage() throws IOException {
         // given
         ErrorResponse.Error error = new ErrorResponse.Error("error!");
         ErrorResponse errorResponse = new ErrorResponse(Sets.newHashSet(error));
 
-        CodeInsightsReport report = mock(CodeInsightsReport.class);
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ResponseBody responseBody = mock(ResponseBody.class);
-        ObjectReader reader = mock(ObjectReader.class);
+        CodeInsightsReport report = mock();
+        Call call = mock();
+        Response response = mock();
+        ResponseBody responseBody = mock();
+        ObjectReader reader = mock();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -303,9 +291,9 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testUploadAnnotations() throws IOException {
+    void testUploadAnnotations() throws IOException {
         // given
-        Annotation annotation = mock(Annotation.class);
+        Annotation annotation = mock();
         when(annotation.getLine()).thenReturn(12);
         when(annotation.getMessage()).thenReturn("hello");
         when(annotation.getSeverity()).thenReturn("severe");
@@ -314,9 +302,9 @@ public class BitbucketServerClientUnitTest {
         when(annotation.getLink()).thenReturn("link");
         when(annotation.getType()).thenReturn("type");
         Set<CodeInsightsAnnotation> annotations = Sets.newHashSet(annotation);
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        Call call = mock();
+        Response response = mock();
+        ArgumentCaptor<Request> captor = ArgumentCaptor.captor();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -338,7 +326,7 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testUploadAnnotationsWithEmptyAnnotations() throws IOException {
+    void testUploadAnnotationsWithEmptyAnnotations() throws IOException {
         // given
         Set<CodeInsightsAnnotation> annotations = Sets.newHashSet();
 
@@ -350,11 +338,11 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testDeleteAnnotations() throws IOException {
+    void testDeleteAnnotations() throws IOException {
         // given
-        Call call = mock(Call.class);
-        Response response = mock(Response.class);
-        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        Call call = mock();
+        Response response = mock();
+        ArgumentCaptor<Request> captor = ArgumentCaptor.captor();
 
         when(client.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
@@ -371,13 +359,13 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testCreateAnnotationForServer() {
+    void testCreateAnnotationForServer() {
         // given
         // when
         CodeInsightsAnnotation annotation = underTest.createCodeInsightsAnnotation("issueKey", 12, "http://localhost:9000/dashboard", "Failed", "/path/to/file", "MAJOR", "BUG");
 
         // then
-        assertTrue(annotation instanceof Annotation);
+        assertInstanceOf(Annotation.class, annotation);
         assertEquals("issueKey", ((Annotation) annotation).getExternalId());
         assertEquals(12, annotation.getLine());
         assertEquals("http://localhost:9000/dashboard", ((Annotation) annotation).getLink());
@@ -387,18 +375,18 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testCreateDataLinkForServer() {
+    void testCreateDataLinkForServer() {
         // given
         // when
         DataValue data = underTest.createLinkDataValue("https://localhost:9000/any/project");
 
         // then
-        assertTrue(data instanceof DataValue.Link);
+        assertInstanceOf(DataValue.Link.class, data);
         assertEquals("https://localhost:9000/any/project", ((DataValue.Link) data).getHref());
     }
 
     @Test
-    public void testUploadLimit() {
+    void testUploadLimit() {
         // given
         // when
         AnnotationUploadLimit annotationUploadLimit = underTest.getAnnotationUploadLimit();
@@ -409,18 +397,45 @@ public class BitbucketServerClientUnitTest {
     }
 
     @Test
-    public void testCreateCloudReport() {
+    void testCreateCloudReport() {
         // given
 
         // when
         CodeInsightsReport result = underTest.createCodeInsightsReport(new ArrayList<>(), "reportDescription", Instant.now(), "dashboardUrl", "logoUrl", ReportStatus.FAILED);
 
         // then
-        assertTrue(result instanceof CreateReportRequest);
+        assertInstanceOf(CreateReportRequest.class, result);
         assertEquals(0, result.getData().size());
         assertEquals("reportDescription", result.getDetails());
         assertEquals("dashboardUrl", result.getLink());
         assertEquals("logoUrl", ((CreateReportRequest) result).getLogoUrl());
         assertEquals("FAIL", result.getResult());
+    }
+
+    @Test
+    void shouldSubmitBuildStatusToServer() throws IOException {
+        // given
+        Call call = mock();
+        Response response = mock();
+        ArgumentCaptor<Request> captor = ArgumentCaptor.captor();
+
+        when(client.newCall(any())).thenReturn(call);
+        when(call.execute()).thenReturn(response);
+        when(response.isSuccessful()).thenReturn(true);
+
+        when(mapper.writeValueAsString(any())).thenReturn("{payload}");
+
+        BuildStatus buildStatus = new BuildStatus(BuildStatus.State.INPROGRESS, "key", "name", "url");
+
+        // when
+        underTest.submitBuildStatus("commit", buildStatus);
+
+        // then
+        verify(client).newCall(captor.capture());
+        Request request = captor.getValue();
+        assertThat(request.method()).isEqualTo("POST");
+        assertThat(request.url()).hasToString("https://my-server.org/rest/api/1.0/projects/project/repos/repository/commits/commit/builds");
+
+        verify(mapper).writeValueAsString(buildStatus);
     }
 }
