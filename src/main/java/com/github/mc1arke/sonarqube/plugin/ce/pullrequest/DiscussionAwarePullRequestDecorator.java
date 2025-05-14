@@ -381,5 +381,9 @@ public abstract class DiscussionAwarePullRequestDecorator<C, P, U, D, N> impleme
         public String getIssueKey() {
             return issueKey;
         }
+
+        public boolean isSummary() {
+            return DECORATOR_SUMMARY_COMMENT.equals(issueKey);
+        }
     }
 }

@@ -71,40 +71,10 @@ import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.markup.MarkdownFormatt
 import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.report.AnalysisIssueSummary;
 import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.report.AnalysisSummary;
 import com.github.mc1arke.sonarqube.plugin.ce.pullrequest.report.ReportGenerator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.sonar.api.ce.posttask.QualityGate;
-import org.sonar.api.issue.Issue;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.scm.Changeset;
-import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
-import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
-import org.sonar.db.alm.setting.ALM;
-import org.sonar.db.alm.setting.AlmSettingDto;
-import org.sonar.db.alm.setting.ProjectAlmSettingDto;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.github.mc1arke.sonarqube.plugin.ce.pullrequest.gitlab.DiscussionMock.DiscussionType.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class GitlabMergeRequestDecoratorTest {
 
@@ -598,12 +568,12 @@ class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
-    public void shouldStartNewDiscussionForIssueIfExistingCommentResolvedInMergeRequest() throws IOException {
+    void shouldStartNewDiscussionForIssueIfExistingCommentResolvedInMergeRequest() throws IOException {
         testStartNewDiscussionForIssueWhenCommentExists(RESOLVED_ISSUE_COMMENT);
     }
 
     @Test
-    public void shouldStartNewDiscussionForIssueIfResolvedBySonarQubeCommentInMergeRequest() throws IOException {
+    void shouldStartNewDiscussionForIssueIfResolvedBySonarQubeCommentInMergeRequest() throws IOException {
         testStartNewDiscussionForIssueWhenCommentExists(RESOLVED_BY_COMMENT_ISSUE_COMMENT);
     }
 
@@ -628,7 +598,7 @@ class GitlabMergeRequestDecoratorTest {
     private void reportIssue() {
         PostAnalysisIssueVisitor.LightIssue lightIssue = mock(PostAnalysisIssueVisitor.LightIssue.class);
         when(lightIssue.key()).thenReturn("issueKey1");
-        when(lightIssue.getStatus()).thenReturn(Issue.STATUS_OPEN);
+        when(lightIssue.issueStatus()).thenReturn(IssueStatus.OPEN);
         when(lightIssue.getLine()).thenReturn(999);
 
         Component component = mock(Component.class);
@@ -650,7 +620,7 @@ class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
-    public void shouldSubmitSummaryNoteBeforeIssueCommentWhenSummaryNoteFirstEnabled() throws IOException {
+    void shouldSubmitSummaryNoteBeforeIssueCommentWhenSummaryNoteFirstEnabled() throws IOException {
         enableScannerProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_FIRST);
         reportIssue();
         noDiscussionsExist();
@@ -698,7 +668,7 @@ class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
-    public void shouldAddSummaryNoteIfNoExistsAndEditingSummaryNoteEnabled() throws IOException {
+    void shouldAddSummaryNoteIfNoExistsAndEditingSummaryNoteEnabled() throws IOException {
         enableScannerProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_EDIT);
         noDiscussionsExist();
         when(analysisSummary.format(any())).thenReturn("Summary comment");
@@ -717,7 +687,7 @@ class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
-    public void shouldEditExistingSummaryNoteWhenEditingSummaryNoteEnabled() throws IOException {
+    void shouldEditExistingSummaryNoteWhenEditingSummaryNoteEnabled() throws IOException {
         enableScannerProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_EDIT);
         when(analysisDetails.getQualityGateStatus()).thenReturn(QualityGate.Status.OK);
 
@@ -739,7 +709,7 @@ class GitlabMergeRequestDecoratorTest {
     }
 
     @Test
-    public void shouldEditExistingSummaryNoteEvenIfItIsResolvedWhenEditingSummaryNoteEnabled() throws IOException {
+    void shouldEditExistingSummaryNoteEvenIfItIsResolvedWhenEditingSummaryNoteEnabled() throws IOException {
         enableScannerProperty(CommunityBranchPlugin.PR_SUMMARY_NOTE_EDIT);
         when(analysisDetails.getQualityGateStatus()).thenReturn(QualityGate.Status.OK);
 
@@ -791,7 +761,7 @@ class GitlabMergeRequestDecoratorTest {
         ArgumentCaptor<MergeRequestNote> mergeRequestNoteArgumentCaptor = ArgumentCaptor.captor();
         verify(gitlabClient, never()).editMergeRequestDisscussionNote(eq(PROJECT_ID), eq(MERGE_REQUEST_IID), any(), anyLong(), any());
         verify(gitlabClient).addMergeRequestDiscussion(eq(PROJECT_ID), eq(MERGE_REQUEST_IID), mergeRequestNoteArgumentCaptor.capture());
-        verify(gitlabClient).resolveMergeRequestDiscussion(PROJECT_ID, MERGE_REQUEST_IID, summaryNote.getId());
+        verify(gitlabClient).deleteMergeRequestDiscussionNote(eq(PROJECT_ID), eq(MERGE_REQUEST_IID), eq(summaryNote.getId()), anyLong());
         verify(gitlabClient).resolveMergeRequestDiscussion(PROJECT_ID, MERGE_REQUEST_IID, discussion.getId());
         ArgumentCaptor<PipelineStatus> pipelineStatusArgumentCaptor = ArgumentCaptor.captor();
         verify(gitlabClient).setMergeRequestPipelineStatus(eq(PROJECT_ID), eq("commitsha"), pipelineStatusArgumentCaptor.capture());
