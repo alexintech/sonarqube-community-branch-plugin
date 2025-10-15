@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Markus Heberling, Michael Clarke
+ * Copyright (C) 2020-2025 Markus Heberling, Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -76,6 +76,11 @@ public class GitlabMergeRequestDecorator extends DiscussionAwarePullRequestDecor
     }
 
     @Override
+    protected boolean isInlineCommentsEnabled(ProjectAlmSettingDto projectAlmSettingDto) {
+        return true;
+    }
+
+    @Override
     protected GitlabClient createClient(AlmSettingDto almSettingDto, ProjectAlmSettingDto projectAlmSettingDto) {
         return gitlabClientFactory.createClient(projectAlmSettingDto, almSettingDto);
     }
@@ -125,14 +130,15 @@ public class GitlabMergeRequestDecorator extends DiscussionAwarePullRequestDecor
 
     @Override
     protected void submitPipelineStatus(GitlabClient gitlabClient, MergeRequest mergeRequest, AnalysisDetails analysis,
-                                        AnalysisSummary analysisSummary) {
+                                        AnalysisSummary analysisSummary, ProjectAlmSettingDto projectAlmSettingDto) {
         Long pipelineId = analysis.getScannerProperty(PULLREQUEST_GITLAB_PIPELINE_ID)
                 .map(Long::parseLong)
                 .orElse(null);
 
         try {
-            PipelineStatus pipelineStatus = new PipelineStatus("SonarQube",
-                    "SonarQube Status",
+            boolean isMonorepo = Boolean.TRUE.equals(projectAlmSettingDto.getMonorepo());
+            PipelineStatus pipelineStatus = new PipelineStatus("SonarQube" + (isMonorepo ? " - " + analysis.getAnalysisProjectKey() : ""),
+                    "SonarQube Status" + (isMonorepo ? " - " + analysis.getAnalysisProjectName() : ""),
                     analysis.getQualityGateStatus() == QualityGate.Status.OK ? PipelineStatus.State.SUCCESS : PipelineStatus.State.FAILED,
                     analysisSummary.getDashboardUrl(),
                     analysisSummary.getNewCoverage(),
